@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root>
+	<!-- Modify the regular masterindex, since that is substantially easier. -->
+	<windowclass name="race_peasant_trait_index">
+		<frame>referencelist</frame>
+		<placement>
+			<size width="450" height="450" />
+		</placement>
+		<sizelimits>
+			<minimum width="450" height="450" />
+			<dynamic />
+		</sizelimits>
+		<minimize>minimized_reference</minimize>
+		<softclose />
+		<script file="campaign/scripts/masterindex_window.lua" />
+		<sheetdata>
+			<windowtitlebar name="reftitle" />
+
+			<!-- Add in some column titles. -->
+			<genericcontrol name="titleanchor">
+				<anchored width="0" height="0">
+					<top parent="reftitle" anchor="bottom" relation="relative" offset="5" />
+					<right offset="-55" />
+				</anchored>
+			</genericcontrol>
+			<label name="subrace_label">
+				<anchored to="titleanchor" width="120">
+					<top />
+					<right anchor="left" relation="relative" offset="-5" />
+				</anchored>
+				<center />
+				<static textres="race_peasant_traits_subrace_label" />
+			</label>
+			<label name="race_label">
+				<anchored to="titleanchor" width="120">
+					<top />
+					<right anchor="left" relation="relative" offset="-5" />
+				</anchored>
+				<center />
+				<static textres="race_peasant_traits_race_label" />
+			</label>
+			<label name="trait_label">
+				<anchored to="titleanchor">
+					<top />
+					<left parent="" offset="20" />
+					<right anchor="left" relation="relative" offset="-5" />
+				</anchored>
+				<static textres="race_peasant_traits_name_label" />
+				<center />
+			</label>
+
+			<!-- And set the content below them. -->
+			<anchor_reftitle name="contentanchor">
+				<anchored>
+					<top parent="trait_label" anchor="bottom" offset="3" />
+				</anchored>
+			</anchor_reftitle>
+
+			<masterindex_anchor_bottom name="bottomanchor" />
+
+			<hsc name="filter_category" />
+			<masterindex_category_label name="label_category" />
+			<masterindex_category_filter_label name="filter_category_label" />
+			<masterindex_category_list name="list_category" />
+			<masterindex_category_scroll name="scroll_category" />
+			<masterindex_category_detail name="button_category_detail" />
+			<masterindex_category_iedit name="button_category_iedit" />
+			<masterindex_category_iadd name="button_category_iadd" />
+			
+			<masterindex_list name="list" />
+			<scrollbar_list />
+			
+			<genericcontrol name="listbottomanchor">
+				<anchored to="list" height="0">
+					<left />
+					<right />
+					<top anchor="bottom" relation="relative" offset="15" />
+				</anchored>
+			</genericcontrol>
+
+			<masterindex_anchor_paging name="pageanchor" />
+			<list_page_info name="page_info" />
+			<list_page_start name="page_start" />
+			<list_page_prev name="page_prev" />
+			<list_page_next name="page_next" />
+			<list_page_end name="page_end" />
+			
+			<genericcontrol name="rightanchor">
+				<anchored to="listbottomanchor" height="20" width="0">
+					<right offset="10" />
+					<top anchor="bottom" relation="relative" offset="5" />
+				</anchored>
+			</genericcontrol>
+			<button_iedit_campaign name="list_iedit" />
+			<!-- No need for the button to try to open another window -->
+			<button_iadd name="list_iadd">
+				<anchored to="rightanchor">
+					<top />
+					<right anchor="left" relation="relative" offset="-5" />
+				</anchored>
+				<script>
+					function setRecordType()
+					end
+				</script>
+			</button_iadd>
+			<!-- Removed sahred only filter. -->
+			<masterindex_filter_name name="filter_name" />
+			
+			<resize_referencelist />
+			<helper_masterindex />
+			<close_referencelist />
+		</sheetdata>
+	</windowclass>
+
+	<windowclass name="race_peasant_trait_item">
+		<script>
+			function setRecordType()
+			end
+		</script>
+		<sheetdata>
+			<genericcontrol name="rightanchor">
+				<anchored width="0" height="0">
+					<top />
+					<right />
+				</anchored>
+				<invisible />
+			</genericcontrol>
+			<button_idelete name="idelete">
+				<anchored width="20" height="20">
+					<top offset="2" />
+					<right parent="rightanchor" anchor="left" relation="relative" offset="-5" />
+				</anchored>
+			</button_idelete>
+			<stringu name="subrace">
+				<anchored width="120" height="20">
+					<top offset="2" />
+					<right parent="rightanchor" anchor="left" relation="relative" offset="-5"  />
+				</anchored>
+				<tabtarget prev="race" />
+			</stringu>
+			<stringu name="race">
+				<anchored width="120" height="20">
+					<top offset="2" />
+					<right parent="rightanchor" anchor="left" relation="relative" offset="-5"  />
+				</anchored>
+				<tabtarget prev="name" next="subrace" />
+			</stringu>
+
+			<stringu name="name">
+				<anchored height="20">
+					<left offset="5" />
+					<top offset="2" />
+					<right parent="rightanchor" anchor="left" relation="relative" offset="-5"  />
+				</anchored>
+				<tabtarget next="race" />
+				<delaykeyupdate />
+			</stringu>
+		</sheetdata>
+	</windowclass>
+</root>

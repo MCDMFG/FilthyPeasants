@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root>
+	<windowclass name="peasant_generator">
+		<frame>charsheet</frame>
+		<placement>
+			<minimum width="350" height="300" />
+		</placement>
+		<sizelimits>
+			<minimum width="350" height="300" />
+			<dynamic />
+		</sizelimits>
+		<script file="campaign/scripts/peasant_generator.lua" />
+		<sheetdata>
+			<genericcontrol name="contentanchor">
+				<anchored width="0" height="0">
+					<top offset="30" />
+					<right />
+				</anchored>
+				<disabled />
+				<invisible />
+			</genericcontrol>
+
+			<!-- TODO switch all the references over to the Arcadia 9 Player - module -->
+			<generator_label name="occupations_label">
+				<static textres="generator_occuptaions_label" />
+			</generator_label>
+			<generator_name name="occupations_name">
+				<linktarget>occupations</linktarget>
+			</generator_name>
+			<generator_linkfield name="occupations">
+				<class>table</class>
+				<recordname>tables.id-00003</recordname>
+			</generator_linkfield>
+			
+			<generator_label name="trinkets_label">
+				<static textres="generator_trinkets_label" />
+			</generator_label>
+			<generator_name name="trinkets_name">
+				<linktarget>trinkets</linktarget>
+			</generator_name>
+			<generator_linkfield name="trinkets">
+				<class>table</class>
+				<recordname>tables.id-00001</recordname>
+			</generator_linkfield>
+
+			<generator_label name="ancestries_label">
+				<static textres="generator_ancestries_label" />
+			</generator_label>
+			<generator_name name="ancestries_name">
+				<linktarget>ancestries</linktarget>
+			</generator_name>
+			<generator_linkfield name="ancestries">
+				<class>table</class>
+				<recordname>tables.id-00004</recordname>
+			</generator_linkfield>
+
+			<generator_label name="scroll_label">
+				<static textres="generator_scroll_label" />
+			</generator_label>
+			<generator_name name="scroll_name">
+				<linktarget>scroll</linktarget>
+			</generator_name>
+			<generator_linkfield name="scroll">
+				<class>item</class>
+				<recordname>item.id-00002</recordname>
+			</generator_linkfield>
+
+			<label name="count_label">
+				<static textres="generator_count_label" />
+				<anchored height="20">
+					<right anchor="center" offset="34" />
+					<bottom offset="-90" />
+				</anchored>
+			</label>
+			<basicnumberc name="count">
+				<anchored width="30" height="20">
+					<left anchor="center" offset="44" />
+					<bottom offset="-90" />
+				</anchored>
+				<min>0</min>
+			</basicnumberc>
+			
+			<button_text_large>
+				<anchored width="100" height="50">
+					<left anchor="center" offset="-50" />
+					<bottom offset="-25" />
+				</anchored>
+				<state textres="generator_button_generate" />
+				<script>
+					function onButtonPress()
+						window.onGenerateButtonPressed();
+					end
+				</script>
+			</button_text_large>
+
+			<close_charsheet />
+		</sheetdata>
+	</windowclass>
+</root>

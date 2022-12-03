@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root>
+	<template name="button_peasant_generator">
+		<button_text_sm>
+			<anchored width="120" height="20" />
+			<state textres="charselect_button_peasant_generator" />
+			<script>
+				function onButtonPress()
+					Interface.openWindow("peasant_generator", "peasant_generation");
+				end	
+			</script>
+		</button_text_sm>
+	</template>
+	<template name="button_race_peasant_view">
+		<button_masterindex_option>
+			<anchored width="100" />
+			<state textres="race_button_peasant_traits" />
+			<script>
+				function onButtonPress()
+					Interface.openWindow("race_peasant_trait_index", "race_peasant_traits");
+				end
+			</script>
+		</button_masterindex_option>
+	</template>
+	<template name="generator_label">
+		<label>
+			<anchored>
+				<left offset="20" />
+				<top parent="contentanchor" anchor="bottom" relation="current" offset="7" />
+			</anchored>
+		</label>
+	</template>
+	<template name="generator_name">
+		<stringcontrol>
+			<anchored height="20">
+				<left offset="130" />
+				<top parent="contentanchor" anchor="bottom" relation="current" offset="7" />
+				<right offset="-50" />
+			</anchored>
+			<frame mergerule="replace" name="fielddark" offset="7,5,7,5" />
+			<stateframe>
+				<hover name="fieldfocus" offset="7,5,7,5" />
+				<drophilight name="fieldfocus" offset="7,5,7,5" />
+			</stateframe>
+			<center />
+			<readonly />
+			<script file="campaign/scripts/generator_name.lua" />
+		</stringcontrol>
+	</template>
+	<template name="generator_linkfield">
+		<linkfield>
+			<anchored width="20" height="20">
+				<top parent="contentanchor" anchor="bottom" relation="relative" offset="7" />
+				<right offset="-25" />
+			</anchored>
+			<script file="common/scripts/link_record.lua" />
+			<script file="campaign/scripts/generator_linkfield.lua" />
+		</linkfield>
+	</template>
+</root>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root>
+	<windowclass name="charselect_host" merge="join">
+		<sheetdata>
+			<button_peasant_generator name="button_peasant_generator" insertbefore="filter">
+				<anchored>
+					<top parent="button_characterwizard" anchor="top" />
+					<right offset="-50" />
+				</anchored>
+			</button_peasant_generator>
+		</sheetdata>
+	</windowclass>
+
+	<windowclass name="charselect_client" merge="join">
+		<sheetdata>
+			<button_peasant_generator name="button_peasant_generator" insertbefore="filter">
+				<anchored>
+					<top parent="button_characterwizard" anchor="top" />
+					<right offset="-50" />
+				</anchored>
+			</button_peasant_generator>
+		</sheetdata>
+	</windowclass>
+</root>

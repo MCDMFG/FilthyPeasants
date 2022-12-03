@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root>
+	<string name="create_peasant_failure">Error: Failed to create new peasant.</string>
+	<string name="peasnt_no_hp">Oh no, a peasant did not survive long enough to be an adventurer, having a starting hit point maximum of %d! How did they live? How did they die?</string>
+	<string name="missing_table_result">A roll of %d on %s did not yield any %s result.</string>
+	<string name="failed_table_resolution">None of the loaded modules had any %s matches for "%s" resulting from a roll of %d on %s.</string>
+	<string name="unnamed_table">Unnamed Table</string>
+
+	<string name="library_recordtype_label_race_peasant_traits">Peasant Traits</string>
+	<string name="race_button_peasant_traits">Peasant Traits</string>
+	<string name="race_peasant_traits_name_label">Traint Name</string>
+	<string name="race_peasant_traits_race_label">Ancestry</string>
+	<string name="race_peasant_traits_subrace_label">Heritage</string>
+
+	<string name="charselect_button_peasant_generator">Peasant Generator</string>
+	<string name="peasant_generator_header">Peasant Generator</string>
+	<string name="generator_occuptaions_label">Occupations Table</string>
+	<string name="generator_trinkets_label">Trinkets Table</string>
+	<string name="generator_ancestries_label">Ancestries Table</string>
+	<string name="generator_scroll_label">Spell Scroll Base</string>
+	<string name="generator_count_label">Number of Peasants</string>
+	<string name="generator_button_generate">Generate</string>
+</root>
