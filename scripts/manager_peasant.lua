@@ -6,13 +6,15 @@
 aEquipmentResolutionFunctions = {};
 
 local nPendingPeasants = 0;
+local nodeStartingEquipment;
 local nodeOccupationTable;
 local nodeTrinketTable;
 local nodeAncestryTable;
 local nodeScrollTemplate;
+local tItems = {};
 local nPendingRolls = 0;
 local rPendingPeasant = {};
-local tItems = {};
+local rPendingEquipment = {};
 
 -- Initialization
 function onInit()
@@ -23,6 +25,8 @@ function onInit()
 	ActionsManager.registerResultHandler("peasanthp", onHpRoll);
 
 	initResolutionFunctions();
+
+	ItemManager.registerPostTransferHandler(onItemTransfered);
 end
 
 function initResolutionFunctions()
@@ -44,6 +48,7 @@ end
 
 function beginGeneratingPeasants(rGenerationInfo)
 	nPendingPeasants = rGenerationInfo.nCount;
+	nodeStartingEquipment = rGenerationInfo.nodeEquipment;
 	nodeOccupationTable = rGenerationInfo.nodeOccupations;
 	nodeTrinketTable = rGenerationInfo.nodeTrinkets;
 	nodeAncestryTable = rGenerationInfo.nodeAncestries;
@@ -62,6 +67,7 @@ function loadItems()
 
 			loadCommaItem(sName, nodeItem);
 			loadParenthesesItem(sName, nodeItem);
+			loadArmor(sName, nodeItem);
 		end
 	end
 end
@@ -93,7 +99,17 @@ function loadParenthesesItem(sName, nodeItem)
 	end
 end
 
+function loadArmor(sName, nodeItem)
+	if ItemManager.isArmor(nodeItem) then
+		sNewName = sName .. " armor";
+		if not tItems[sNewName] then
+			tItems[sNewName] = nodeItem;
+		end
+	end
+end
+
 function beginGeneratingPeasant()
+	rPendingPeasant = {};
 	nPendingRolls = beginGeneratingAbilityScores() + 4; -- HP, Occupation, Trinket, Ancestry
 	beginGeneratingHp();
 	beginGeneratingTable(nodeAncestryTable, "peasantancestry");
@@ -246,11 +262,15 @@ function commitPeasant(sIdentity)
 	commitPeasantAncestry(nodePeasant);
 	commitPeasantOccupation(nodePeasant);
 	commitPeasantTrinket(nodePeasant);
+	commitPeasantLanguages(nodePeasant);
+	commitPeasantAC(nodePeasant);
+	-- TODO (elsewhere) level 1 support. Reminder for proficiency handling based on other factors. Force "wizard"? (no?)
 
-	rPendingPeasant = {};
 	nPendingPeasants = nPendingPeasants - 1;
 	if nPendingPeasants > 0 then
 		beginGeneratingPeasant();
+	else
+		rPendingPeasant = {};
 	end
 end
 
@@ -347,15 +367,20 @@ function commitPeasantOccupation(nodePeasant)
 	if (rPendingPeasant.sOccupation or "") == "" then
 		addMissingResultNote(nodePeasant, "Occupation", rPendingPeasant.nOccupationRoll, nodeOccupationTable);
 	else
-		addNode(nodePeasant, "Peasant Occuptaion - " .. rPendingPeasant.sOccupation);
+		DB.setValue(nodePeasant, "background", "string", rPendingPeasant.sOccupation);
 	end
 
 	for _,sEquipment in ipairs(rPendingPeasant.aEquipment) do
 		commitPeasantEquipment(nodePeasant, sEquipment);
 	end
+
+	commitProficiencies(nodePeasant);
 end
 
 function commitPeasantEquipment(nodePeasant, sEquipment)
+	local nodeInventory = nodePeasant.createChild( "inventorylist");
+	ItemManager.addItemToList(nodeInventory, "item", nodeStartingEquipment.getPath());
+
 	local nCount;
 	local sDice, sEquipmentName = sEquipment:match("%[([^%]]+)%]%s*(.*)");
 	if sDice then
@@ -366,25 +391,10 @@ function commitPeasantEquipment(nodePeasant, sEquipment)
 
 	local rResult = resolveEquipment(sEquipmentName);
 	if rResult and rResult.nodeItem then
-		local nodeItem = ItemManager.handleItem(nodePeasant, "inventorylist", "item", rResult.nodeItem.getPath());
-		if (rResult.sName or "") ~= "" then
-			DB.setValue(nodeItem, "name", "string", rResult.sName);
-		end
-		if (nCount or 0) ~= 0 then
-			DB.setValue(nodeItem, "count", "number", rResult.nCount);
-		end
-		if rResult.nodeCantrip then
-			local sFormat = "<linklist><link class=\"reference_spell\" recordname=\"%s\"><b>Spell: </b>%s</link></linklist>%s";
-			local sDescription = string.format(sFormat,
-				rResult.nodeCantrip.getPath(),
-				DB.getValue(rResult.nodeCantrip, "name", ""),
-				DB.getValue(nodeItem, "description", ""));
-			DB.setValue(nodeItem, "description", "formattedtext", sDescription);
-
-			if ItemManagerKNK then
-				PowerManager.addPower("reference_spell", rResult.nodeCantrip, nodeItem);
-			end
-		end
+		rPendingEquipment = rResult;
+		rPendingEquipment.nCount = nCount;
+		ItemManager.addItemToList(nodeInventory, "item", rResult.nodeItem.getPath());
+		rPendingEquipment = {};
 	else
 		addFailedResolutionNote(nodePeasant, "Equipment", sEquipment, rPendingPeasant.nOccupationRoll, nodeOccupationTable);
 	end
@@ -459,21 +469,21 @@ function resolveSpellScroll(sEquipment)
 	if sList then
 		local rSpellList = ClassSpellListManager.getClassSpellListRecord(sList);
 
-		local aCantrips = {};
+		local aSpells = {};
 		for _,nodeSpell in ipairs(rSpellList.tSpells) do
 			local nLevel =  DB.getValue(nodeSpell, "level", -1);
 			if nMinLevel <= nLevel and nLevel <= nMaxLevel then
-				table.insert(aCantrips, nodeSpell);
+				table.insert(aSpells, nodeSpell);
 			end
 		end
 
-		if #aCantrips > 0 then
-			local nCantrip = math.random(#aCantrips);
-			local nodeCantrip = aCantrips[nCantrip];
+		if #aSpells > 0 then
+			local nSpell = math.random(#aSpells);
+			local nodeSpell = aSpells[nSpell];
 			return {
 				nodeItem = nodeScrollTemplate,
-				sName = "Scroll of ".. DB.getValue(nodeCantrip, "name", ""),
-				nodeCantrip = nodeCantrip,
+				sName = "Scroll of ".. DB.getValue(nodeSpell, "name", ""),
+				nodeSpell = nodeSpell,
 			};
 		end
 	end
@@ -481,6 +491,15 @@ end
 
 function parseSpellLevel(sLevel)
 	return tonumber(sLevel:match("[1-9]")) or 0;
+end
+
+function commitProficiencies(nodePeasant)
+	if rPendingPeasant.aProfiencies then
+		local sProficiencies = "Equipment: " .. table.concat(rPendingPeasant.aProfiencies, ", ");
+		local nodeProficiencies = DB.createChild(nodePeasant, "proficiencylist");
+		local nodeProficiency = DB.createChild(nodeProficiencies);
+		DB.setValue(nodeProficiency, "name", "string", sProficiencies);
+	end
 end
 
 function commitPeasantTrinket(nodePeasant)
@@ -492,23 +511,234 @@ function commitPeasantTrinket(nodePeasant)
 
 end
 
+function commitPeasantLanguages(nodePeasant)
+	local sLanguages = DB.getValue(nodePeasant, "languages", "");
+	if sLanguages == "" then
+		DB.setValue(nodePeasant, "languages", "string", "Common");
+	end
+end
+
+function commitPeasantAC(nodePeasant)
+	local nArmor = DB.getValue(nodePeasant, "defenses.ac.armor", 0);
+	if nArmor == 0 then
+		DB.setValue(nodePeasant, "defenses.ac.armor", "number", -1); -- Unless armored, peasants have 9 base AC
+	end
+end
+
 function addFailedResolutionNote(nodePeasant, sType, sResult, nResult, nodeTable)
 	local sTable = DB.getValue(nodeTable, "name", Interface.getString("unnamed_table"));
 	local sNote = string.format(Interface.getString("failed_table_resolution"), sType, sResult, nResult, sTable);
-	addNode(nodePeasant, sNote);
+	addNote(nodePeasant, sNote);
 end
 
 function addMissingResultNote(nodePeasant, sType, nResult, nodeTable)
 	local sTable = DB.getValue(nodeTable, "name", Interface.getString("unnamed_table"));
 	local sNote = string.format(Interface.getString("missing_table_result"), nResult, sTable, sType);
-	addNode(nodePeasant, sNote);
+	addNote(nodePeasant, sNote);
 end
 
-function addNode(nodePeasant, sNewNote)
+function addNote(nodePeasant, sNewNote)
 	local sNote = DB.getValue(nodePeasant, "notes", "");
 	if sNote ~= "" then
 		sNote = sNote .. "\n";
 	end
 	sNote = sNote .. sNewNote;
 	DB.setValue(nodePeasant, "notes", "string", sNote);
+end
+
+function onItemTransfered(_, rTargetItem)
+	if not isGeneratingPeasants() then
+		return;
+	end
+
+	if ItemManager.isArmor(rTargetItem.node) or ItemManager.isWeapon(rTargetItem.node) then
+		rPendingPeasant.aProfiencies = rPendingPeasant.aProfiencies or {};
+		table.insert(rPendingPeasant.aProfiencies, DB.getValue(rTargetItem.node, "name", ""));
+		CharArmorManager.calcItemArmorClass(DB.getChild(rTargetItem.node, "..."));
+	end
+
+	if (rPendingEquipment.sName or "") ~= "" then
+		DB.setValue(rTargetItem.node, "name", "string", rPendingEquipment.sName);
+	end
+	if (rPendingEquipment.nCount or 0) ~= 0 then
+		DB.setValue(rTargetItem.node, "count", "number", rPendingEquipment.nCount);
+	end
+	if rPendingEquipment.nodeSpell then
+		local sFormat = "<linklist><link class=\"reference_spell\" recordname=\"%s\"><b>Spell: </b>%s</link></linklist>%s";
+		local sDescription = string.format(sFormat,
+			rPendingEquipment.nodeSpell.getPath(),
+			DB.getValue(rPendingEquipment.nodeSpell, "name", ""),
+			DB.getValue(rTargetItem.node, "description", ""));
+		DB.setValue(rTargetItem.node, "description", "formattedtext", sDescription);
+
+		if ItemManagerKNK then
+			PowerManager.addPower("reference_spell", rPendingEquipment.nodeSpell, rTargetItem.node);
+		end
+	end
+end
+
+function promotePeasant(rPeasant)
+	-- hijack level up button (maybe best left to CW integration in the future)?
+	--		CW does not even remotely understand a peasant. or freshly created character prior to class selection
+	--		probably could snag it for a list of classes and just use a select dialog into a fake drop
+	finalizeAncestry(rPeasant.nodePeasant);
+	finalizeHeritage(rPeasant.nodePeasant);
+	selectSaves(rPeasant.nodePeasant);
+
+	if rPeasant.nodePendingBackground then
+		setPeasantBackGround(rPeasant.nodePeasant, rPeasant.nodePendingBackground);
+	else
+		selectBackground(rPeasant.nodePeasant);
+	end
+
+	if rPeasant.nodePendingClass then
+		setPeasantClass(rPeasant.nodePeasant, rPeasant.nodePendingClass);
+	else
+		selectClass(rPeasant.nodePeasant);
+	end
+end
+
+function finalizeAncestry(nodePeasant)
+	local _,sNodeAncestry = DB.getValue(nodePeasant, "racelink")
+	local nodeAncestry = DB.findNode(sNodeAncestry);
+	if nodeAncestry then
+		finalizeTraits(nodePeasant, nodeAncestry, "reference_racialtrait");
+	end
+end
+
+function finalizeHeritage(nodePeasant)
+	local _,sNodeHeritage = DB.getValue(nodePeasant, "subracelink")
+	local nodeHeritage = DB.findNode(sNodeHeritage);
+	if nodeHeritage then
+		finalizeTraits(nodePeasant, nodeHeritage, "reference_subracialtrait");
+	end
+end
+
+function finalizeTraits(nodePeasant, nodeSource, sClass)
+	for _,nodeTrait in pairs(DB.getChildren(nodeSource, "traits")) do
+		local sTraitName = DB.getValue(nodeTrait, "name", "");
+		if not CharManager.hasTrait(nodePeasant, sTraitName) then
+			CharRaceManager.addRaceTrait(nodePeasant, sClass, nodeTrait.getPath());
+		end
+	end
+end
+
+function selectSaves(nodePeasant)
+	local nPicks = 2;
+	for _,nodeAbility in pairs(DB.getChildren(nodePeasant, "abilities")) do
+		if DB.getValue(nodeAbility, "saveprof") == 1 then
+			nPicks = nPicks - 1;
+		end
+	end
+
+	if nPicks > 0 then
+		local sTitle = Interface.getString("peasant_promote_select_save_title");
+		local sMessage = string.format(Interface.getString("peasant_promote_select_save_message"), nPicks);
+		local aAbilities = CharManager.getFullAbilitySelectList();
+		local wSelect = Interface.openWindow("select_dialog", "");
+		wSelect.requestSelection(sTitle, sMessage, aAbilities, onSaveSelectComplete, nodePeasant, nPicks);
+	end
+end
+
+function onSaveSelectComplete(aSelection, nodePeasant)
+	for _,sAbility in ipairs(aSelection) do
+		local sAbilityLower = StringManager.trim(sAbility):lower();
+		if StringManager.contains(DataCommon.abilities, sAbilityLower) then
+			DB.setValue(nodePeasant, "abilities." .. sAbilityLower .. ".saveprof", "number", 1);
+			CharManager.outputUserMessage("char_abilities_message_saveadd", sAbility, DB.getValue(nodePeasant, "name", ""));
+		end
+	end
+end
+
+function selectBackground(nodePeasant)
+	local tBackgrounds, aBackgrounds = getAddableList("background");
+	local sTitle = Interface.getString("peasant_promote_select_background_title");
+	local sMessage = string.format(Interface.getString("peasant_promote_select_background_message"),
+		DB.getValue(nodePeasant, "name", "Filthy Peasant"));
+	local wSelect = Interface.openWindow("select_dialog", "");
+	local rInfo = { nodePeasant = nodePeasant, tBackgrounds = tBackgrounds };
+	wSelect.requestSelection(sTitle, sMessage, aBackgrounds, onBackgroundSelectComplete, rInfo, 1);
+end
+
+function onBackgroundSelectComplete(aSelection, rInfo)
+	local rOption = rInfo.tBackgrounds[aSelection[1]];
+	setPeasantBackGround(rInfo.nodePeasant,  rOption.nodeSource);
+end
+
+function setPeasantBackGround(nodePeasant, nodeBackground)
+	local rAdd = CharManager.helperBuildAddStructure(nodePeasant, "reference_background",nodeBackground.getPath());
+	if not rAdd then
+		return;
+	end
+
+	local sOccupation = DB.getValue(rAdd.nodeChar, "background", "");
+	CharBackgroundManager.helperAddBackgroundMain(rAdd);
+	if sOccupation ~= "" then
+		local sBackground = string.format("%s as (%s)", sOccupation, DB.getValue(nodeBackground, "name", ""))
+		DB.setValue(rAdd.nodeChar, "background", "string", sBackground);
+	end
+end
+
+function selectClass(nodePeasant)
+	local tClasses, aClasses = getAddableList("class");
+	local sTitle = Interface.getString("peasant_promote_select_class_title");
+	local sMessage = string.format(Interface.getString("peasant_promote_select_class_message"),
+		DB.getValue(nodePeasant, "name", "Filthy Peasant"));
+	local wSelect = Interface.openWindow("select_dialog", "");
+	wSelect.requestSelection(sTitle, sMessage, aClasses, onClassSelectComplete, { nodePeasant = nodePeasant, tClasses = tClasses }, 1);
+end
+
+function onClassSelectComplete(aSelection, rInfo)
+	local nodeSource =  rInfo.tClasses[aSelection[1]].nodeSource;
+	setPeasantClass(rInfo.nodePeasant, nodeSource)
+end
+
+function setPeasantClass(nodePeasant, nodeClass)
+	local rAdd = CharManager.helperBuildAddStructure(nodePeasant, "reference_class", nodeClass.getPath());
+	if not rAdd then
+		return;
+	end
+
+	DB.setValue(nodePeasant, "hp.total", "number", 0); -- Clear in prep for class
+	CharClassManager.helperAddClassMain(rAdd);
+	selectSkills(nodePeasant, nodeClass);
+end
+
+function selectSkills(nodePeasant, nodeClass)
+	local nCurrentSkills = 0;
+	local aSkills = {};
+	for _,nodeSkill in pairs(DB.getChildren(nodePeasant, "skilllist")) do
+		if DB.getValue(nodeSkill, "prof", 0) == 0 then
+			table.insert(aSkills, DB.getValue(nodeSkill, "name", ""));
+		else
+			nCurrentSkills = nCurrentSkills + 1;
+		end
+	end
+	table.sort(aSkills);
+
+	Debug.chat("skills", nodeClass, DB.getChild(nodeClass, "proficiencies"), DB.getChild(nodeClass, "proficiencies.skills"))
+	Debug.chat("parsed", CharManager.parseSkillProficiencyText(DB.getChild(nodeClass, "proficiencies.skills")))
+	local nPicks = 2 + CharManager.parseSkillProficiencyText(DB.getChild(nodeClass, "proficiencies.skills")) - nCurrentSkills;
+	if nPicks > 0 then
+		CharManager.pickSkills(nodePeasant, aSkills, nPicks);
+	end
+end
+
+function getAddableList(sType)
+	local tOptions = {};
+	local aOptions = {};
+	local aMappings = LibraryData.getMappings(sType);
+	for _,vMapping in ipairs(aMappings) do
+		for _,nodeSource in pairs(DB.getChildrenGlobal(vMapping)) do
+			local sName = DB.getValue(nodeSource, "name");
+			if not tOptions[sName] then
+				local rInfo = { text = sName, linkclass = "reference_" .. sType, linkrecord = nodeSource.getPath(), nodeSource = nodeSource };
+				tOptions[sName] = rInfo;
+				table.insert(aOptions, rInfo);
+			end
+		end
+	end
+	table.sort(aOptions, function(a,b) return a.text < b.text; end);
+
+	return tOptions, aOptions;
 end

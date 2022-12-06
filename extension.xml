@@ -48,6 +48,8 @@ SOFTWARE.
 		<includefile source="strings/strings.xml" />
 
 		<script name="CampaignDataManagerFP" file="scripts/manager_campaigndata_fp.lua" />
+		<script name="CharBackgroundManagerFP" file="scripts/manager_char_background_fp.lua" />
+		<script name="CharClassManagerFP" file="scripts/manager_char_class_fp.lua" />
 		<script name="CharRaceManagerFP" file="scripts/manager_char_race_fp.lua" />
 		<script name="LibraryDataFP" file="scripts/data_library_fp.lua" />
 		<script name="PeasantManager" file="scripts/manager_peasant.lua" />

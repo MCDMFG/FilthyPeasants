@@ -21,6 +21,17 @@
 			</genericcontrol>
 
 			<!-- TODO switch all the references over to the Arcadia 9 Player - module -->
+			<generator_label name="equipment_label">
+				<static textres="generator_equipment_label" />
+			</generator_label>
+			<generator_name name="equipment_name">
+				<linktarget>equipment</linktarget>
+			</generator_name>
+			<generator_linkfield name="equipment">
+				<class>item</class>
+				<recordname>item.id-00004</recordname>
+			</generator_linkfield>
+			
 			<generator_label name="occupations_label">
 				<static textres="generator_occuptaions_label" />
 			</generator_label>

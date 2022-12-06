@@ -8,16 +8,24 @@
 
 	<string name="library_recordtype_label_race_peasant_traits">Peasant Traits</string>
 	<string name="race_button_peasant_traits">Peasant Traits</string>
-	<string name="race_peasant_traits_name_label">Traint Name</string>
+	<string name="race_peasant_traits_name_label">Trait Name</string>
 	<string name="race_peasant_traits_race_label">Ancestry</string>
 	<string name="race_peasant_traits_subrace_label">Heritage</string>
 
 	<string name="charselect_button_peasant_generator">Peasant Generator</string>
 	<string name="peasant_generator_header">Peasant Generator</string>
+	<string name="generator_equipment_label">Starting Equipment</string>
 	<string name="generator_occuptaions_label">Occupations Table</string>
 	<string name="generator_trinkets_label">Trinkets Table</string>
 	<string name="generator_ancestries_label">Ancestries Table</string>
 	<string name="generator_scroll_label">Spell Scroll Base</string>
 	<string name="generator_count_label">Number of Peasants</string>
 	<string name="generator_button_generate">Generate</string>
+
+	<string name="peasant_promote_select_save_title">Select Saving Throws</string>
+	<string name="peasant_promote_select_save_message">Choose %s saving throw proficiencies.</string>
+	<string name="peasant_promote_select_class_title">Select Class</string>
+	<string name="peasant_promote_select_class_message">Select a class for %s.</string>
+	<string name="peasant_promote_select_background_title">Select Background</string>
+	<string name="peasant_promote_select_background_message">Select a background for %s.</string>
 </root>
