@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root>
+	<windowclass name="charsheet_classes">
+		<sheetdata>
+			<button_charlevelup name="levelup">
+				<script>
+					function onButtonPress()
+						local nodeChar = window.getDatabaseNode();
+						if PeasantManager.isPeasant(nodeChar) then
+							PeasantManager.promotePeasant(nodeChar);
+						else
+							super.onButtonPress();
+						end
+					end
+				</script>
+			</button_charlevelup>
+		</sheetdata>
+	</windowclass>
+</root>

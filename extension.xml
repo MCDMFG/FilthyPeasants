@@ -44,6 +44,7 @@ SOFTWARE.
 		<includefile source="campaign/campaign_chars.xml" />
 		<includefile source="campaign/campaign_peasant_traits.xml" />
 		<includefile source="campaign/peasant_generator.xml" />
+		<includefile source="campaign/record_char_main.xml" />
 		<includefile source="campaign/template_campaign.xml" />
 		<includefile source="strings/strings.xml" />
 

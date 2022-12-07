@@ -20,7 +20,6 @@
 				<invisible />
 			</genericcontrol>
 
-			<!-- TODO switch all the references over to the Arcadia 9 Player - module -->
 			<generator_label name="equipment_label">
 				<static textres="generator_equipment_label" />
 			</generator_label>
@@ -29,7 +28,7 @@
 			</generator_name>
 			<generator_linkfield name="equipment">
 				<class>item</class>
-				<recordname>item.id-00004</recordname>
+				<recordname>item.id-00001@Arcadia 9 - Player</recordname>
 			</generator_linkfield>
 			
 			<generator_label name="occupations_label">
@@ -40,7 +39,7 @@
 			</generator_name>
 			<generator_linkfield name="occupations">
 				<class>table</class>
-				<recordname>tables.id-00003</recordname>
+				<recordname>tables.id-00003@Arcadia 9 - Player</recordname>
 			</generator_linkfield>
 			
 			<generator_label name="trinkets_label">
@@ -51,7 +50,7 @@
 			</generator_name>
 			<generator_linkfield name="trinkets">
 				<class>table</class>
-				<recordname>tables.id-00001</recordname>
+				<recordname>tables.id-00001@Arcadia 9 - Player</recordname>
 			</generator_linkfield>
 
 			<generator_label name="ancestries_label">
@@ -62,7 +61,7 @@
 			</generator_name>
 			<generator_linkfield name="ancestries">
 				<class>table</class>
-				<recordname>tables.id-00004</recordname>
+				<recordname>tables.id-00004@Arcadia 9 - Player</recordname>
 			</generator_linkfield>
 
 			<generator_label name="scroll_label">
@@ -73,7 +72,7 @@
 			</generator_name>
 			<generator_linkfield name="scroll">
 				<class>item</class>
-				<recordname>item.id-00002</recordname>
+				<recordname>item.id-00004@Arcadia 9 - Player</recordname>
 			</generator_linkfield>
 
 			<label name="count_label">

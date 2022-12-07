@@ -81,18 +81,31 @@ function loadCommaItem(sName, nodeItem)
 		if not tItems[sNewName] then
 			tItems[sNewName] = nodeItem;
 		end
+		return sNewName;
 	end
+	return sName;
 end
 
 function loadParenthesesItem(sName, nodeItem)
 	-- Account for names such as "Acid (Vial)" and "Arrows (20)"
-	local sItem, sType = sName:match("^([^,%(]+),%s*(.+)");
-	if sItem and not tItems[sItem] then
-		tItems[sItem] = nodeItem;
+	local sItem, sType = sName:match("^([^%(]-)%s*%((.+)%)");
+	if sItem then
+		if not tItems[sItem] then
+			tItems[sItem] = nodeItem;
+		end
+
+		-- For things like "Rope, Hempen (50 feet)".
+		sItem = loadCommaItem(sItem, nodeItem);
 	end
+
 	-- Include type if not a number, for example "Bag (Small)"
 	if sType and not sType:match("^[%d,]+$") then
 		local sNewName = sType .. " " .. sItem;
+		if not tItems[sNewName] then
+			tItems[sNewName] = nodeItem;
+		end
+
+		sNewName = sType .. " of " .. sItem;
 		if not tItems[sNewName] then
 			tItems[sNewName] = nodeItem;
 		end
@@ -264,7 +277,6 @@ function commitPeasant(sIdentity)
 	commitPeasantTrinket(nodePeasant);
 	commitPeasantLanguages(nodePeasant);
 	commitPeasantAC(nodePeasant);
-	-- TODO (elsewhere) level 1 support. Reminder for proficiency handling based on other factors. Force "wizard"? (no?)
 
 	nPendingPeasants = nPendingPeasants - 1;
 	if nPendingPeasants > 0 then
@@ -392,8 +404,7 @@ function commitPeasantEquipment(nodePeasant, sEquipment)
 	local rResult = resolveEquipment(sEquipmentName);
 	if rResult and rResult.nodeItem then
 		rPendingEquipment = rResult;
-		rPendingEquipment.nCount = nCount;
-		ItemManager.addItemToList(nodeInventory, "item", rResult.nodeItem.getPath());
+		ItemManager.addItemToList(nodeInventory, "item", rResult.nodeItem.getPath(), false, nCount);
 		rPendingEquipment = {};
 	else
 		addFailedResolutionNote(nodePeasant, "Equipment", sEquipment, rPendingPeasant.nOccupationRoll, nodeOccupationTable);
@@ -425,7 +436,8 @@ function resolveRenamedEquipment(sEquipment)
 		if nodeItem then
 			return {
 				nodeItem = nodeItem,
-				sName = sEquipment
+				sName = sEquipment,
+				sMatch = sItem,
 			};
 		end
 	end
@@ -483,6 +495,7 @@ function resolveSpellScroll(sEquipment)
 			return {
 				nodeItem = nodeScrollTemplate,
 				sName = "Scroll of ".. DB.getValue(nodeSpell, "name", ""),
+				sMatch = DB.getValue(nodeScrollTemplate, "name");
 				nodeSpell = nodeSpell,
 			};
 		end
@@ -551,17 +564,15 @@ function onItemTransfered(_, rTargetItem)
 		return;
 	end
 
+	local sName = DB.getValue(rTargetItem.node, "name", "");
 	if ItemManager.isArmor(rTargetItem.node) or ItemManager.isWeapon(rTargetItem.node) then
 		rPendingPeasant.aProfiencies = rPendingPeasant.aProfiencies or {};
-		table.insert(rPendingPeasant.aProfiencies, DB.getValue(rTargetItem.node, "name", ""));
+		table.insert(rPendingPeasant.aProfiencies, sName);
 		CharArmorManager.calcItemArmorClass(DB.getChild(rTargetItem.node, "..."));
 	end
 
-	if (rPendingEquipment.sName or "") ~= "" then
+	if (rPendingEquipment.sName or "") ~= "" and sName == rPendingEquipment.sMatch then
 		DB.setValue(rTargetItem.node, "name", "string", rPendingEquipment.sName);
-	end
-	if (rPendingEquipment.nCount or 0) ~= 0 then
-		DB.setValue(rTargetItem.node, "count", "number", rPendingEquipment.nCount);
 	end
 	if rPendingEquipment.nodeSpell then
 		local sFormat = "<linklist><link class=\"reference_spell\" recordname=\"%s\"><b>Spell: </b>%s</link></linklist>%s";
@@ -666,7 +677,7 @@ function onBackgroundSelectComplete(aSelection, rInfo)
 end
 
 function setPeasantBackGround(nodePeasant, nodeBackground)
-	local rAdd = CharManager.helperBuildAddStructure(nodePeasant, "reference_background",nodeBackground.getPath());
+	local rAdd = CharManager.helperBuildAddStructure(nodePeasant, "reference_background", nodeBackground.getPath());
 	if not rAdd then
 		return;
 	end
@@ -716,8 +727,6 @@ function selectSkills(nodePeasant, nodeClass)
 	end
 	table.sort(aSkills);
 
-	Debug.chat("skills", nodeClass, DB.getChild(nodeClass, "proficiencies"), DB.getChild(nodeClass, "proficiencies.skills"))
-	Debug.chat("parsed", CharManager.parseSkillProficiencyText(DB.getChild(nodeClass, "proficiencies.skills")))
 	local nPicks = 2 + CharManager.parseSkillProficiencyText(DB.getChild(nodeClass, "proficiencies.skills")) - nCurrentSkills;
 	if nPicks > 0 then
 		CharManager.pickSkills(nodePeasant, aSkills, nPicks);
