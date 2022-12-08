@@ -11,7 +11,9 @@ local nodeOccupationTable;
 local nodeTrinketTable;
 local nodeAncestryTable;
 local nodeScrollTemplate;
-local tItems = {};
+local tItemsByName = {};
+local tItemsByType = {};
+local tItemsBySubtype = {};
 local nPendingRolls = 0;
 local rPendingPeasant = {};
 local rPendingEquipment = {};
@@ -26,7 +28,7 @@ function onInit()
 
 	initResolutionFunctions();
 
-	ItemManager.registerPostTransferHandler(onItemTransfered);
+	ItemManager.registerCleanupTransferHandler(cleanupItemTranfer);
 end
 
 function initResolutionFunctions()
@@ -35,6 +37,7 @@ function initResolutionFunctions()
 		resolveOptionalEquipment,
 		resolveRenamedEquipment,
 		resolveSpellScroll,
+		resolveRandomItem,
 	};
 end
 
@@ -58,18 +61,26 @@ function beginGeneratingPeasants(rGenerationInfo)
 end
 
 function loadItems()
-	tItems = {};
+	tItemsByName = {};
+	tItemsByType = {};
+	tItemsBySubtype = {};
 	local aMappings = LibraryData.getMappings("item");
 	for _,vMapping in ipairs(aMappings) do
 		for _,nodeItem in pairs(DB.getChildrenGlobal(vMapping)) do
-			local sName = StringManager.trim(DB.getValue(nodeItem, "name", "")):lower();
-			tItems[sName] = nodeItem;
-
-			loadCommaItem(sName, nodeItem);
-			loadParenthesesItem(sName, nodeItem);
-			loadArmor(sName, nodeItem);
+			loadItemByName(nodeItem);
+			loadItemByType(nodeItem);
+			loadItemBySubtype(nodeItem);
 		end
 	end
+end
+
+function loadItemByName(nodeItem)
+	local sName = StringManager.trim(DB.getValue(nodeItem, "name", "")):lower();
+	tItemsByName[sName] = nodeItem;
+
+	loadCommaItem(sName, nodeItem);
+	loadParenthesesItem(sName, nodeItem);
+	loadArmor(sName, nodeItem);
 end
 
 function loadCommaItem(sName, nodeItem)
@@ -78,8 +89,8 @@ function loadCommaItem(sName, nodeItem)
 	local sItem, sType = sName:match("^([^,%(]+),%s*(.+)");
 	if sItem and sType then
 		local sNewName = sType .. " " .. sItem;
-		if not tItems[sNewName] then
-			tItems[sNewName] = nodeItem;
+		if not tItemsByName[sNewName] then
+			tItemsByName[sNewName] = nodeItem;
 		end
 		return sNewName;
 	end
@@ -90,8 +101,8 @@ function loadParenthesesItem(sName, nodeItem)
 	-- Account for names such as "Acid (Vial)" and "Arrows (20)"
 	local sItem, sType = sName:match("^([^%(]-)%s*%((.+)%)");
 	if sItem then
-		if not tItems[sItem] then
-			tItems[sItem] = nodeItem;
+		if not tItemsByName[sItem] then
+			tItemsByName[sItem] = nodeItem;
 		end
 
 		-- For things like "Rope, Hempen (50 feet)".
@@ -101,13 +112,13 @@ function loadParenthesesItem(sName, nodeItem)
 	-- Include type if not a number, for example "Bag (Small)"
 	if sType and not sType:match("^[%d,]+$") then
 		local sNewName = sType .. " " .. sItem;
-		if not tItems[sNewName] then
-			tItems[sNewName] = nodeItem;
+		if not tItemsByName[sNewName] then
+			tItemsByName[sNewName] = nodeItem;
 		end
 
 		sNewName = sType .. " of " .. sItem;
-		if not tItems[sNewName] then
-			tItems[sNewName] = nodeItem;
+		if not tItemsByName[sNewName] then
+			tItemsByName[sNewName] = nodeItem;
 		end
 	end
 end
@@ -115,9 +126,33 @@ end
 function loadArmor(sName, nodeItem)
 	if ItemManager.isArmor(nodeItem) then
 		sNewName = sName .. " armor";
-		if not tItems[sNewName] then
-			tItems[sNewName] = nodeItem;
+		if not tItemsByName[sNewName] then
+			tItemsByName[sNewName] = nodeItem;
 		end
+	end
+end
+
+function loadItemByType(nodeItem)
+	local sType = StringManager.trim(DB.getValue(nodeItem, "type", "")):lower();
+	if sType ~= "" then
+		local aItems = tItemsByType[sType];
+		if not aItems then
+			aItems = {};
+			tItemsByType[sType] = aItems;
+		end
+		table.insert(aItems, nodeItem);
+	end
+end
+
+function loadItemBySubtype(nodeItem)
+	local sSubtype= StringManager.trim(DB.getValue(nodeItem, "subtype", "")):lower();
+	if sSubtype ~= "" then
+		local aItems = tItemsBySubtype[sSubtype];
+		if not aItems then
+			aItems = {};
+			tItemsBySubtype[sSubtype] = aItems;
+		end
+		table.insert(aItems, nodeItem);
 	end
 end
 
@@ -394,20 +429,27 @@ function commitPeasantEquipment(nodePeasant, sEquipment)
 	ItemManager.addItemToList(nodeInventory, "item", nodeStartingEquipment.getPath());
 
 	local nCount;
-	local sDice, sEquipmentName = sEquipment:match("%[([^%]]+)%]%s*(.*)");
+	local sDice, sEquipmentName = sEquipment:match("%[([^%]]+)%]%s*(.+)");
 	if sDice then
 		nCount = DiceManager.evalDiceString(sDice);
 	else
 		sEquipmentName = sEquipment;
 	end
 
+	sEquipmentName = sEquipmentName:lower();
 	local rResult = resolveEquipment(sEquipmentName);
 	if rResult and rResult.nodeItem then
 		rPendingEquipment = rResult;
 		ItemManager.addItemToList(nodeInventory, "item", rResult.nodeItem.getPath(), false, nCount);
 		rPendingEquipment = {};
 	else
-		addFailedResolutionNote(nodePeasant, "Equipment", sEquipment, rPendingPeasant.nOccupationRoll, nodeOccupationTable);
+		local nCurrency, sCurrency = CurrencyManager.parseCurrencyString(sEquipmentName, true);
+		if sCurrency then
+			nCurrency = nCurrency * (nCount or 1);
+			CurrencyManager.addCharCurrency(nodeInventory, sCurrency, nCurrency);
+		else
+			addFailedResolutionNote(nodePeasant, "Equipment", sEquipment, rPendingPeasant.nOccupationRoll, nodeOccupationTable);
+		end
 	end
 end
 
@@ -423,7 +465,7 @@ function resolveEquipment(sEquipment)
 end
 
 function resolveNamedEquipment(sEquipment)
-	local nodeItem = tItems[sEquipment:lower()];
+	local nodeItem = tItemsByName[sEquipment];
 	if nodeItem then
 		return { nodeItem = nodeItem };
 	end
@@ -432,12 +474,11 @@ end
 function resolveRenamedEquipment(sEquipment)
 	local sItem = sEquipment:match("[^(]+ %(as ([^)]+)");
 	if sItem then
-		local nodeItem = tItems[sItem:lower()];
+		local nodeItem = tItemsByName[sItem];
 		if nodeItem then
 			return {
 				nodeItem = nodeItem,
 				sName = sEquipment,
-				sMatch = sItem,
 			};
 		end
 	end
@@ -495,7 +536,6 @@ function resolveSpellScroll(sEquipment)
 			return {
 				nodeItem = nodeScrollTemplate,
 				sName = "Scroll of ".. DB.getValue(nodeSpell, "name", ""),
-				sMatch = DB.getValue(nodeScrollTemplate, "name");
 				nodeSpell = nodeSpell,
 			};
 		end
@@ -504,6 +544,30 @@ end
 
 function parseSpellLevel(sLevel)
 	return tonumber(sLevel:match("[1-9]")) or 0;
+end
+
+function resolveRandomItem(sEquipment)
+	local sLookup, sItem = sEquipment:match("^%[(%w+):%s*([^%]]+)%]$");
+	Debug.chat(sEquipment, sLookup, sItem)
+	if not sItem then
+		return;
+	end
+
+	sItem = StringManager.trim(sItem);
+	local aItems;
+	if sLookup == "type" then
+		aItems = tItemsByType[sItem];
+	elseif sLookup == "subtype" then
+		aItems = tItemsBySubtype[sItem];
+	end
+
+	if not aItems then
+		return;
+	end
+
+	local nItem = math.random(#aItems);
+	local nodeItem = aItems[nItem];
+	return { nodeItem = nodeItem };
 end
 
 function commitProficiencies(nodePeasant)
@@ -517,11 +581,13 @@ end
 
 function commitPeasantTrinket(nodePeasant)
 	local nodeTrinket = DB.findNode(rPendingPeasant.sNodeTrinket);
-	if not nodeTrinket then
+	if nodeTrinket then
+		local nodeInventory = nodePeasant.createChild( "inventorylist");
+		ItemManager.addItemToList(nodeInventory, "item", rPendingPeasant.sNodeTrinket);
+	else
 		addFailedResolutionNote(nodePeasant, "Trinket", rPendingPeasant.sTrinket, rPendingPeasant.nTrinketRoll, nodeTrinketTable);
 		return;
 	end
-
 end
 
 function commitPeasantLanguages(nodePeasant)
@@ -559,39 +625,36 @@ function addNote(nodePeasant, sNewNote)
 	DB.setValue(nodePeasant, "notes", "string", sNote);
 end
 
-function onItemTransfered(_, rTargetItem)
-	if not isGeneratingPeasants() then
+function cleanupItemTranfer(rSourceItem, rTempItem, rTargetItem)
+	if not PeasantManager.isGeneratingPeasants() then
 		return;
 	end
 
-	local sName = DB.getValue(rTargetItem.node, "name", "");
-	if ItemManager.isArmor(rTargetItem.node) or ItemManager.isWeapon(rTargetItem.node) then
+	local sName = DB.getValue(rSourceItem.node, "name", "");
+	if ItemManager.isArmor(rTempItem.node) or ItemManager.isWeapon(rTempItem.node) then
 		rPendingPeasant.aProfiencies = rPendingPeasant.aProfiencies or {};
 		table.insert(rPendingPeasant.aProfiencies, sName);
 		CharArmorManager.calcItemArmorClass(DB.getChild(rTargetItem.node, "..."));
 	end
 
-	if (rPendingEquipment.sName or "") ~= "" and sName == rPendingEquipment.sMatch then
-		DB.setValue(rTargetItem.node, "name", "string", rPendingEquipment.sName);
+	if ((rPendingEquipment.sName or "") ~= "") and (rSourceItem.node.getPath() == rPendingEquipment.nodeItem.getPath()) then
+		DB.setValue(rTempItem.node, "name", "string", StringManager.capitalize(rPendingEquipment.sName));
 	end
 	if rPendingEquipment.nodeSpell then
 		local sFormat = "<linklist><link class=\"reference_spell\" recordname=\"%s\"><b>Spell: </b>%s</link></linklist>%s";
 		local sDescription = string.format(sFormat,
 			rPendingEquipment.nodeSpell.getPath(),
 			DB.getValue(rPendingEquipment.nodeSpell, "name", ""),
-			DB.getValue(rTargetItem.node, "description", ""));
-		DB.setValue(rTargetItem.node, "description", "formattedtext", sDescription);
+			DB.getValue(rTempItem.node, "description", ""));
+		DB.setValue(rTempItem.node, "description", "formattedtext", sDescription);
 
 		if ItemManagerKNK then
-			PowerManager.addPower("reference_spell", rPendingEquipment.nodeSpell, rTargetItem.node);
+			PowerManager.addPower("reference_spell", rPendingEquipment.nodeSpell, rTempItem.node);
 		end
 	end
 end
 
 function promotePeasant(rPeasant)
-	-- hijack level up button (maybe best left to CW integration in the future)?
-	--		CW does not even remotely understand a peasant. or freshly created character prior to class selection
-	--		probably could snag it for a list of classes and just use a select dialog into a fake drop
 	finalizeAncestry(rPeasant.nodePeasant);
 	finalizeHeritage(rPeasant.nodePeasant);
 	selectSaves(rPeasant.nodePeasant);
