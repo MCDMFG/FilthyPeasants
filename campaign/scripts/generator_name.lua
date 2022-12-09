@@ -8,21 +8,21 @@ function onClickDown(button, x, y)
 end
 
 function onClickRelease(button, x, y)
-	if linktarget then
+	if linktarget and window[linktarget[1]].isEnabled() then
 		window[linktarget[1]].activate();
 	end
 	return true;
 end
 
 function onDragStart(button, x, y, draginfo)
-	if linktarget and window[linktarget[1]].onDragStart then
+	if linktarget and window[linktarget[1]].isEnabled() then
 		window[linktarget[1]].onDragStart(button, x, y, draginfo);
 		return true;
 	end
 end
 
 function onDrop(x, y, draginfo)
-	if linktarget and window[linktarget[1]].onDrop then
+	if linktarget then
 		return window[linktarget[1]].onDrop(x, y, draginfo);
 	end
 end

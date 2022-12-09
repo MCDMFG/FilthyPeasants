@@ -28,7 +28,10 @@ function onValueChanged()
 	local sClass, sRecord = getValue();
 	local node = getTargetDatabaseNode();
 	if node then
-		sName = DB.getValue(node, "name", Interface.getString("library_recordtype_empty_" .. sClass));
+		sName = DB.getValue(node, "name", "");
+		if sName == "" then
+			sName = Interface.getString("library_recordtype_empty_" .. sClass);
+		end
 	else
 		if sRecord then
 			local sModule = sRecord:match("@(.+)$");
