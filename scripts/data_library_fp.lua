@@ -19,5 +19,4 @@ function onInit()
 			["Subrace"] = { sField = "subrace" },
 		}
 	});
-	LibraryData.initRecordType("race_peasant_traits");
 end
