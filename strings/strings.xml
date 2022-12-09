@@ -21,6 +21,7 @@
 	<string name="generator_scroll_label">Spell Scroll Base</string>
 	<string name="generator_count_label">Number of Peasants</string>
 	<string name="generator_button_generate">Generate</string>
+	<string name="module_not_loaded">&#171; Module Not Loaded &#187;</string>
 
 	<string name="peasant_promote_select_save_title">Select Saving Throws</string>
 	<string name="peasant_promote_select_save_message">Choose %s saving throw proficiencies.</string>

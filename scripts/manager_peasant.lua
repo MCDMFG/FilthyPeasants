@@ -403,7 +403,7 @@ function selectHeritage()
 end
 
 function resolveHeritage(sAncestry)
-	local tHeritages = CharRaceManageer.getRaceSubraceOptions(sAncestry);
+	local tHeritages = CharRaceManager.getRaceSubraceOptions(sAncestry);
 	local rHeritage = tHeritages[rPendingPeasant.sAncestry];
 	if rHeritage then
 		return DB.findNode(rHeritage.linkrecord);
@@ -548,7 +548,6 @@ end
 
 function resolveRandomItem(sEquipment)
 	local sLookup, sItem = sEquipment:match("^%[(%w+):%s*([^%]]+)%]$");
-	Debug.chat(sEquipment, sLookup, sItem)
 	if not sItem then
 		return;
 	end

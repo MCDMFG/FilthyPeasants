@@ -5,6 +5,13 @@
 
 function onInit()
 	onValueChanged();
+	
+	Module.onModuleAdded = onValueChanged;
+	Module.onModuleUpdated = onValueChanged;
+	Module.onModuleRemoved = onValueChanged;
+end
+
+function onClose()
 end
 
 function onDrop(_, _, draginfo)
@@ -16,8 +23,29 @@ function onDrop(_, _, draginfo)
 end
 
 function onValueChanged()
+	local sName;
+	local bHasLink = true;
+	local sClass, sRecord = getValue();
+	local node = getTargetDatabaseNode();
+	if node then
+		sName = DB.getValue(node, "name", Interface.getString("library_recordtype_empty_" .. sClass));
+	else
+		if sRecord then
+			local sModule = sRecord:match("@(.+)$");
+			if sModule then
+				sName = Interface.getString("module_not_loaded");
+			end
+		end
+		if not sName then
+			sName = Interface.getString("export_missing_recordtype_single");
+			bHasLink = false;
+		end
+	end
+
+	setEnabled(bHasLink);
+
 	local nameControl = window[getName() .. "_name"];
 	if nameControl then
-		nameControl.setValue(DB.getValue(getTargetDatabaseNode(), "name", ""));
+		nameControl.setValue(sName);
 	end
 end
