@@ -267,7 +267,12 @@ function tryCommitPeasant()
 	end
 
 	if not calculateHp() then
-		ChatManager.Message(string.format(Interface.getString("peasnt_no_hp"), rPendingPeasant.hp), true);
+		local rMsg = {
+			text = string.format(Interface.getString("peasnt_no_hp"), rPendingPeasant.hp),
+			font = "narratorfont",
+			mode = "story",
+			secret = false };
+		Comm.deliverChatMessage(rMsg);
 		beginGeneratingPeasant();
 		return;
 	end

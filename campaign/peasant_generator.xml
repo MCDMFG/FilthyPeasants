@@ -88,6 +88,15 @@
 					<bottom offset="-90" />
 				</anchored>
 				<min>0</min>
+				<script>
+					function onInit()
+						if Session.IsHost then
+							setMaxValue(20);
+						else
+							setMaxValue(5);
+						end
+					end
+				</script>
 			</basicnumberc>
 			
 			<button_text_large name="generate_button">

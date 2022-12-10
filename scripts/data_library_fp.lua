@@ -15,8 +15,8 @@ function onInit()
 		sListDisplayClass = "race_peasant_trait_item",
 		bNoCategories = true,
 		aCustomFilters = {
-			["Race"] = { sField = "race" },
-			["Subrace"] = { sField = "subrace" },
+			["Ancestry"] = { sField = "race" },
+			["Heritage"] = { sField = "subrace" },
 		}
 	});
 end
