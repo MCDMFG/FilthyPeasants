@@ -5,13 +5,10 @@
 
 function onInit()
 	onValueChanged();
-	
+
 	Module.onModuleAdded = onValueChanged;
 	Module.onModuleUpdated = onValueChanged;
 	Module.onModuleRemoved = onValueChanged;
-end
-
-function onClose()
 end
 
 function onDrop(_, _, draginfo)
@@ -51,4 +48,6 @@ function onValueChanged()
 	if nameControl then
 		nameControl.setValue(sName);
 	end
+
+	window.update();
 end

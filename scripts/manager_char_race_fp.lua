@@ -3,7 +3,11 @@
 -- attribution and copyright information.
 --
 
+local addRaceDropOriginal;
+local callbackAddRaceSubraceChoiceOriginal;
 local helperAddRaceTraitMainOriginal;
+
+local bFixingAncestry;
 
 aGlobalRacePeasantTraits = {
 	"size",
@@ -12,13 +16,33 @@ aGlobalRacePeasantTraits = {
 };
 
 function onInit()
+	addRaceDropOriginal = CharRaceManager.addRaceDrop;
+	CharRaceManager.addRaceDrop = addRaceDrop;
+
+	callbackAddRaceSubraceChoiceOriginal = CharRaceManager.callbackAddRaceSubraceChoice;
+	CharRaceManager.callbackAddRaceSubraceChoice = callbackAddRaceSubraceChoice;
+
 	helperAddRaceTraitMainOriginal = CharRaceManager.helperAddRaceTraitMain;
 	CharRaceManager.helperAddRaceTraitMain = helperAddRaceTraitMain;
 end
 
+function addRaceDrop(nodeChar, sClass, sRecord)
+	local _, sRaceNode = DB.getValue(nodeChar, "racelink", "", "");
+	bFixingAncestry = (sRaceNode == "") and PeasantManager.isPeasant(nodeChar);
+	addRaceDropOriginal(nodeChar, sClass, sRecord);
+	bFixingAncestry = false;
+end
+
+function callbackAddRaceSubraceChoice(tSelection, rAdd)
+	local _, sSubraceNode = DB.getValue(rAdd.nodeChar, "subracelink", "", "");
+	bFixingAncestry = (sSubraceNode == "") and PeasantManager.isPeasant(rAdd.nodeChar);
+	callbackAddRaceSubraceChoiceOriginal(tSelection, rAdd);
+	bFixingAncestry = false;
+end
+
 function helperAddRaceTraitMain(rAdd)
 	local bShouldAdd = true;
-	if PeasantManager.isGeneratingPeasants() and PeasantManager.isPeasant(rAdd.nodeChar) then
+	if bFixingAncestry or (PeasantManager.isGeneratingPeasants() and PeasantManager.isPeasant(rAdd.nodeChar)) then
 		bShouldAdd = StringManager.contains(aGlobalRacePeasantTraits, rAdd.sSourceName:lower());
 		if not bShouldAdd then
 			bShouldAdd = isPeasantTrait(rAdd);

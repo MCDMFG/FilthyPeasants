@@ -357,7 +357,8 @@ end
 function commitPeasantAncestry(nodePeasant)
 	local nodeAncestry, nodeHeritage = resolveAncestryAndHeritage();
 	if not nodeAncestry then
-		addFailedResolutionNote(nodePeasant, "Ancestry", rPendingPeasant.sAncestry, rPendingPeasant.nAncestryRoll, nodeAncestryTable);
+		DB.setValue(nodePeasant, "race" , "string", rPendingPeasant.sAncestry);
+		addFailedResolutionNote(nodePeasant, "Ancestry", rPendingPeasant.sAncestry, rPendingPeasant.nAncestryRoll, nodeAncestryTable, true);
 		return;
 	end
 
@@ -372,11 +373,11 @@ end
 
 function resolveAncestryAndHeritage()
 	local nodeAncestry = RecordManager.findRecordByStringI("race", "name", rPendingPeasant.sAncestry);
-	local nodeHeritage, sAncestry, sHeritage;
+	local nodeHeritage;
 	if nodeAncestry then
-		sAncestry = rPendingPeasant.sAncestry;
-		sHeritage, nodeHeritage = selectHeritage();
+		nodeHeritage = selectHeritage();
 	else
+		local sAncestry;
 		sAncestry, nodeAncestry = CharRaceManager.getRaceFromSubrace(rPendingPeasant.sAncestry);
 		nodeHeritage = resolveHeritage(sAncestry);
 	end
@@ -385,21 +386,20 @@ function resolveAncestryAndHeritage()
 end
 
 function selectHeritage()
-	local sHeritage, nodeHeritage;
+	local nodeHeritage;
 	local tHeritages = CharRaceManager.getRaceSubraceOptions(rPendingPeasant.sAncestry);
 	if #tHeritages > 0 then
 		local index = 1;
 		local nHeritage = math.random(#tHeritages);
 		for _,rHeritage in pairs(tHeritages) do
 			if index == nHeritage then
-				sHeritage = rHeritage.text;
 				nodeHeritage = DB.findNode(rHeritage.linkrecord);
 				break;
 			end
 			index = index + 1;
 		end
 	end
-	return sHeritage, nodeHeritage;
+	return nodeHeritage;
 end
 
 function resolveHeritage(sAncestry)
@@ -603,10 +603,13 @@ function commitPeasantAC(nodePeasant)
 	end
 end
 
-function addFailedResolutionNote(nodePeasant, sType, sResult, nResult, nodeTable)
+function addFailedResolutionNote(nodePeasant, sType, sResult, nResult, nodeTable, bSendChat)
 	local sTable = DB.getValue(nodeTable, "name", Interface.getString("unnamed_table"));
 	local sNote = string.format(Interface.getString("failed_table_resolution"), sType, sResult, nResult, sTable);
 	addNote(nodePeasant, sNote);
+	if bSendChat then
+		ChatManager.SystemMessage(sNote);
+	end
 end
 
 function addMissingResultNote(nodePeasant, sType, nResult, nodeTable)

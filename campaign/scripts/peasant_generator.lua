@@ -3,6 +3,15 @@
 -- attribution and copyright information.
 --
 
+function update()
+	local bEnabled = equipment.isEnabled()
+		and occupations.isEnabled()
+		and trinkets.isEnabled()
+		and ancestries.isEnabled()
+		and scroll.isEnabled();
+	generate_button.setEnabled(bEnabled);
+end
+
 function onGenerateButtonPressed()
 	local _, sEquipment = equipment.getValue();
 	local _, sOccupations = occupations.getValue();
