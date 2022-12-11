@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <root>
-	<windowclass name="charsheet_classes">
+	<windowclass name="charsheet_classes" merge="join">
 		<sheetdata>
 			<button_charlevelup name="levelup">
 				<script>
 					function onButtonPress()
 						local nodeChar = window.getDatabaseNode();
 						if PeasantManager.isPeasant(nodeChar) then
-							PeasantManager.promotePeasant(nodeChar);
+							PeasantManager.promotePeasant({ nodePeasant = nodeChar });
 						else
 							super.onButtonPress();
 						end
