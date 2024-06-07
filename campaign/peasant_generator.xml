@@ -99,7 +99,7 @@
 				</script>
 			</basicnumberc>
 			
-			<button_text_large name="generate_button">
+			<button_text name="generate_button">
 				<anchored width="100" height="50">
 					<left anchor="center" offset="-50" />
 					<bottom offset="-25" />
@@ -110,7 +110,7 @@
 						window.onGenerateButtonPressed();
 					end
 				</script>
-			</button_text_large>
+			</button_text>
 
 			<close_charsheet />
 		</sheetdata>
